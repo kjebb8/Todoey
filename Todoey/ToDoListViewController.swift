@@ -8,9 +8,23 @@
 
 import UIKit
 
+extension UIAlertController {
+    func addActions(actions: [UIAlertAction], preferredChoice: String? = nil) {
+        
+        for action in actions {
+            self.addAction(action)
+            
+            if let preferredChoice = preferredChoice, preferredChoice == action.title {
+                self.preferredAction = action
+            }
+        }
+    }
+}
+
+
 class ToDoListViewController: UITableViewController {
 
-    let itemArray = ["Find Mike", "Buy Eggos", "Save Hyrule"]
+    var itemArray = ["Find Mike", "Buy Eggos", "Save Hyrule"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -41,6 +55,40 @@ class ToDoListViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
+    //MARK - Add New Action
+    
+    
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
+        let alert = UIAlertController(title: "Add New Item", message: "", preferredStyle: .alert)
+//
+//        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+//            print("Success")
+//        }
+//
+//        let cancel = UIAlertAction(title: "Cancel", style: .default, handler: nil)
+//
+//        alert.addAction(cancel)
+//        alert.addAction(action)
+        
+        alert.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Create New Item"
+        }
+        
+        //Using Extension
+        alert.addActions(actions: [
+            UIAlertAction(title: "Cancel", style: .default, handler: nil),
+            UIAlertAction(title: "Add Item", style: .default) { (action) in
+                let newItem = alert.textFields?[0].text
+                if newItem != "" {
+                    self.itemArray.append(newItem!)} //Textfield cannot be nil so unwrap is safe
+                    self.tableView.reloadData()
+                }
+            ], preferredChoice: "Add Item")
+        
+        present(alert, animated: true, completion: nil)
+        
+    }
     
 }
 
