@@ -26,9 +26,14 @@ class ToDoListViewController: UITableViewController {
 
     var itemArray = ["Find Mike", "Buy Eggos", "Save Hyrule"]
     
+    let defaults = UserDefaults.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        if let items = defaults.array(forKey: "ToDoListArray") as? [String] {
+            itemArray = items
+        }
     }
 
     //MARK - Tableview Datasource Methods
@@ -81,13 +86,14 @@ class ToDoListViewController: UITableViewController {
             UIAlertAction(title: "Add Item", style: .default) { (action) in
                 let newItem = alert.textFields?[0].text
                 if newItem != "" {
-                    self.itemArray.append(newItem!)} //Textfield cannot be nil so unwrap is safe
+                    self.itemArray.append(newItem!) //Textfield cannot be nil so unwrap is safe
+                    self.defaults.set(self.itemArray, forKey: "ToDoListArray")
                     self.tableView.reloadData()
                 }
+            }
             ], preferredChoice: "Add Item")
         
         present(alert, animated: true, completion: nil)
-        
     }
     
 }
