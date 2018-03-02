@@ -7,8 +7,125 @@
 //
 
 import UIKit
+import CoreData
 
-//Copied from the internet
+class ToDoListViewController: UITableViewController {
+
+    var itemArray = [ListItem]() //itemArray is outside context but the ListItem objects are in the context. It is then an array of references to the NSManagedObjects
+    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
+    var alert : UIAlertController?
+    
+    @IBOutlet weak var searchBar: UISearchBar!
+    
+    //MARK: - View Did Load Method
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        searchBar.delegate = self
+        
+        //print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+        
+        loadItems()
+    }
+
+    //MARK: - Tableview Datasource Methods
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return (itemArray.count == 0 ? 1 : itemArray.count) //Allow "No Items" to show up
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+       
+        if itemArray.count > 0 {
+            let item = itemArray[indexPath.row] //Readability
+            
+            cell.textLabel?.text = item.title
+            cell.accessoryType = item.done ? .checkmark : .none //Ternary operator
+        }
+        else {
+            cell.textLabel?.text = "No Items"
+            cell.accessoryType = .none
+        }
+        
+        return cell
+    }
+
+    
+    //MARK: - Tableview Delegate Methods
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+//        context.delete(itemArray[indexPath.row]) //Delete the object in the context
+//        itemArray.remove(at: indexPath.row) //Remove the reference to the deleted object
+        
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done //Toggle boolean in the context object
+       
+        saveItems()
+        tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    
+    //MARK: - Add new item via alert
+    
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
+        alert = UIAlertController(title: "Add New Item", message: "", preferredStyle: .alert)
+        
+        alert?.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Create New Item"
+            alertTextField.addTarget(self, action: #selector(self.alertTextFieldDidChange(_:)), for: .editingChanged)
+        }
+        
+        //Using Extension
+        alert?.addActions(actions: [
+            UIAlertAction(title: "Cancel", style: .default, handler: nil),
+            UIAlertAction(title: "Add Item", style: .default) { (action) in
+                let newItemTitle = self.alert?.textFields?[0].text
+                if newItemTitle != "" {
+                    let newListItem = ListItem(context: self.context) //Object created in Context
+                    newListItem.title = newItemTitle
+                    newListItem.done = false
+                    self.itemArray.append(newListItem)
+                    self.saveItems()
+                }
+            }
+            ], preferredChoice: "Add Item")
+        
+        alert?.actions[1].isEnabled = false
+        
+        present(alert!, animated: true, completion: nil)
+    }
+    
+    //MARK: - Model Manipulation Methods
+    
+    func saveItems() {
+        do {
+            try context.save()
+        } catch {
+            print("Error saving context \(error)")
+        }
+        tableView.reloadData()
+    }
+    
+    func loadItems(with request: NSFetchRequest<ListItem> = ListItem.fetchRequest()) {
+
+        do {
+            itemArray = try context.fetch(request) //Returns array of specified objects
+        } catch {
+           print("Error fetching from context \(error)")
+        }
+        tableView.reloadData()
+    }
+    
+}
+
+
+//MARK: - UIAlertController Extension
 extension UIAlertController {
     func addActions(actions: [UIAlertAction], preferredChoice: String? = nil) {
         
@@ -23,108 +140,44 @@ extension UIAlertController {
 }
 
 
-class ToDoListViewController: UITableViewController {
+//MARK: - Search Bar Methods
 
-    var itemArray = [ListItem]()
+extension ToDoListViewController: UISearchBarDelegate {
     
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist") //Singleton
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
+    //When the search button is clicked in the keyboard
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         
-        loadItems()
-    }
-
-    //MARK - Tableview Datasource Methods
-    
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
-    }
-    
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        
-        let item = itemArray[indexPath.row] //Readability
-        
-        cell.textLabel?.text = item.title
-        
-        cell.accessoryType = item.done ? .checkmark : .none //Ternary operator
-        
-        return cell
-    }
-
-    
-    //MARK - Tableview Delegate Methods
-    
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
-        itemArray[indexPath.row].done = !itemArray[indexPath.row].done //Toggle boolean
-        saveItems()
-        tableView.deselectRow(at: indexPath, animated: true)
-    }
-    
-    //MARK - Add New Action
-    
-    
-    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
-        
-        let alert = UIAlertController(title: "Add New Item", message: "", preferredStyle: .alert)
-//
-//        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
-//            print("Success")
-//        }
-//
-//        let cancel = UIAlertAction(title: "Cancel", style: .default, handler: nil)
-//
-//        alert.addAction(cancel)
-//        alert.addAction(action)
-        
-        alert.addTextField { (alertTextField) in
-            alertTextField.placeholder = "Create New Item"
-        }
-        
-        //Using Extension
-        alert.addActions(actions: [
-            UIAlertAction(title: "Cancel", style: .default, handler: nil),
-            UIAlertAction(title: "Add Item", style: .default) { (action) in
-                let newItemTitle = alert.textFields?[0].text
-                if newItemTitle != "" {
-                    self.itemArray.append(ListItem(itemTitle: newItemTitle!)) //Textfield cannot be nil so unwrap is safe
-                    self.saveItems()
-                }
-            }
-            ], preferredChoice: "Add Item")
-        
-        present(alert, animated: true, completion: nil)
-    }
-    
-    //MARK - Model Manipulation Methods
-    
-    func saveItems() {
-        let encoder = PropertyListEncoder()
-        do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
-        } catch {
-            print("Error encoding \(error)")
-        }
-        tableView.reloadData()
-    }
-    
-    func loadItems() {
-        
-        if let data = try? Data(contentsOf: dataFilePath!) { //Different method of trying a function
+        if searchBar.text! != "" {
             
-            let decoder = PropertyListDecoder()
+            let request : NSFetchRequest<ListItem> = ListItem.fetchRequest()
+            request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
             
-            do {
-            itemArray = try decoder.decode([ListItem].self, from: data)
-            } catch {
-                print("Error decoding \(error)")
+            loadItems(with: request)
+        }
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        if searchText == "" {
+            loadItems()
+            
+            //Remove the keyboard and stop typing in searchbar (I actually hate this. The alternative is a touch on the table taking out the bar when search is active)
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
             }
         }
     }
     
 }
 
+
+//MARK: - Alert Functionality Extension
+
+extension ToDoListViewController {
+    
+    //Disable the Add Item button when no text entered
+    @objc func alertTextFieldDidChange(_ sender: UITextField) {
+        alert?.actions[1].isEnabled = sender.text!.count > 0
+    }
+}
