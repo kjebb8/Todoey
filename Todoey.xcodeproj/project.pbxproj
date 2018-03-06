@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C028C22D204B652600E51268 /* CategoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C028C22C204B652600E51268 /* CategoryViewController.swift */; };
 		C08467AB20471E20006AE7B1 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08467AA20471E20006AE7B1 /* AppDelegate.swift */; };
 		C08467AD20471E20006AE7B1 /* ToDoListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C08467AC20471E20006AE7B1 /* ToDoListViewController.swift */; };
 		C08467B020471E20006AE7B1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C08467AE20471E20006AE7B1 /* Main.storyboard */; };
@@ -16,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C028C22C204B652600E51268 /* CategoryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryViewController.swift; sourceTree = "<group>"; };
 		C08467A720471E20006AE7B1 /* Todoey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Todoey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C08467AA20471E20006AE7B1 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C08467AC20471E20006AE7B1 /* ToDoListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToDoListViewController.swift; sourceTree = "<group>"; };
@@ -77,6 +79,7 @@
 		C0F8DB5E20489CCE000789C3 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
+				C028C22C204B652600E51268 /* CategoryViewController.swift */,
 				C08467AC20471E20006AE7B1 /* ToDoListViewController.swift */,
 			);
 			path = Controllers;
@@ -171,6 +174,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C028C22D204B652600E51268 /* CategoryViewController.swift in Sources */,
 				C0F02CA82049ACC30085A796 /* DataModel.xcdatamodeld in Sources */,
 				C08467AD20471E20006AE7B1 /* ToDoListViewController.swift in Sources */,
 				C08467AB20471E20006AE7B1 /* AppDelegate.swift in Sources */,
