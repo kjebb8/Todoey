@@ -7,13 +7,13 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ToDoListViewController: UITableViewController {
-
-    var itemArray = [ListItem]() //itemArray is outside context but the ListItem objects are in the context. It is then an array of references to the NSManagedObjects
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    let realm = try! Realm()
+
+    var toDoItems: Results<Item>? //Auto updates
     
     var alert : UIAlertController?
     
@@ -31,23 +31,19 @@ class ToDoListViewController: UITableViewController {
         super.viewDidLoad()
         
         searchBar.delegate = self
-        
-        //print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
     }
 
     //MARK: - Tableview Datasource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return (itemArray.count == 0 ? 1 : itemArray.count) //Allow "No Items" to show up
+        return (toDoItems?.count ?? 1)
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
        
-        if itemArray.count > 0 {
-            let item = itemArray[indexPath.row] //Readability
-            
+        if let item = toDoItems?[indexPath.row] {
             cell.textLabel?.text = item.title
             cell.accessoryType = item.done ? .checkmark : .none //Ternary operator
         }
@@ -64,12 +60,16 @@ class ToDoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-//        context.delete(itemArray[indexPath.row]) //Delete the object in the context
-//        itemArray.remove(at: indexPath.row) //Remove the reference to the deleted object
-        
-        itemArray[indexPath.row].done = !itemArray[indexPath.row].done //Toggle boolean in the context object
-       
-        saveItems()
+        if let item = toDoItems?[indexPath.row] {
+            do {
+                try realm.write {
+                    item.done = !item.done //Toggle boolean in the context object
+                }
+            } catch {
+                print("Error saving done status")
+            }
+        }
+        tableView.reloadData()
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -89,13 +89,22 @@ class ToDoListViewController: UITableViewController {
         alert?.addActions(actions: [
             UIAlertAction(title: "Cancel", style: .default, handler: nil),
             UIAlertAction(title: "Add Item", style: .default) { (action) in
-                let newListItem = ListItem(context: self.context) //Object created in Context
-                newListItem.title = self.alert?.textFields?[0].text
-                newListItem.done = false
-                newListItem.parentCategory = self.selectedCategory
-                self.itemArray.append(newListItem)
-                self.saveItems()
+                
+                if let currentCategory = self.selectedCategory {
+                    do {
+                         try self.realm.write {
+                            let newListItem = Item()
+                            newListItem.title = (self.alert?.textFields?[0].text)!
+                            newListItem.dateCreated = Date()
+                            currentCategory.items.append(newListItem)
+                        }
+                    } catch {
+                        print("Error saving \(error)")
+                    }
+                }
+                self.tableView.reloadData()
             }
+            
             ], preferredChoice: "Add Item")
         
         alert?.actions[1].isEnabled = false
@@ -105,32 +114,36 @@ class ToDoListViewController: UITableViewController {
     
     //MARK: - Model Manipulation Methods
     
-    func saveItems() {
-        do {
-            try context.save()
-        } catch {
-            print("Error saving context \(error)")
-        }
+    func loadItems() {
+        toDoItems = selectedCategory?.items.sorted(byKeyPath: "dateCreated", ascending: true)
         tableView.reloadData()
     }
     
-    func loadItems(with request: NSFetchRequest<ListItem> = ListItem.fetchRequest(), predicate: NSPredicate? = nil) {
-        
-        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-        
-        if let additionalPredicate = predicate {
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
-        }
-        else {
-            request.predicate = categoryPredicate
-        }
+}
 
-        do {
-            itemArray = try context.fetch(request) //Returns array of specified objects
-        } catch {
-           print("Error fetching from context \(error)")
+//MARK: - Search Bar Methods Extension
+
+extension ToDoListViewController: UISearchBarDelegate {
+    
+    //When the search button is clicked in the keyboard
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        if searchBar.text! != "" {
+            toDoItems = toDoItems?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "dateCreated", ascending: true)
+            tableView.reloadData()
         }
-        tableView.reloadData()
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        if searchText == "" {
+            loadItems()
+            
+            //Remove the keyboard and stop typing in searchbar (I actually hate this. The alternative is a touch on the table taking out the bar when search is active)
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
     }
     
 }
@@ -148,38 +161,6 @@ extension UIAlertController {
             }
         }
     }
-}
-
-
-//MARK: - Search Bar Methods
-
-extension ToDoListViewController: UISearchBarDelegate {
-    
-    //When the search button is clicked in the keyboard
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        
-        if searchBar.text! != "" {
-            
-            let request : NSFetchRequest<ListItem> = ListItem.fetchRequest()
-            let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-            
-            loadItems(with: request, predicate: predicate)
-        }
-    }
-    
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        
-        if searchText == "" {
-            loadItems()
-            
-            //Remove the keyboard and stop typing in searchbar (I actually hate this. The alternative is a touch on the table taking out the bar when search is active)
-            DispatchQueue.main.async {
-                searchBar.resignFirstResponder()
-            }
-        }
-    }
-    
 }
 
 
