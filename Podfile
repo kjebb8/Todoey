@@ -8,6 +8,7 @@ target 'Todoey' do
   # Pods for Todoey
 
 pod 'RealmSwift'
+pod 'SwipeCellKit'
 
 post_install do |installer|
     installer.pods_project.targets.each do |target|

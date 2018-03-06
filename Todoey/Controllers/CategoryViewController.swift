@@ -6,11 +6,11 @@
 //  Copyright © 2018 Keegan Jebb. All rights reserved.
 //
 
-
 import UIKit
 import RealmSwift
 
-class CategoryViewController: UITableViewController {
+
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm() //This is ok for the second Realm initialization
 
@@ -20,7 +20,6 @@ class CategoryViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         loadCategories()
     }
     
@@ -32,8 +31,9 @@ class CategoryViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        cell.textLabel?.text = category?[indexPath.row].name ?? "No Categories"
+        
+        let cell = super.tableView(tableView, cellForRowAt: indexPath) //Function in Super Class
+        cell.textLabel?.text = category?[indexPath.row].name ?? "No Categories" //No Categories label not working with swipe cell deletion -> see Q&A on Lecture 269
         return cell
     }
     
@@ -80,6 +80,18 @@ class CategoryViewController: UITableViewController {
     func loadCategories() {
         category = realm.objects(Category.self)
         tableView.reloadData()
+    }
+    
+    override func deleteRowData(at indexPath: IndexPath) {
+        if let deleteCategory = category?[indexPath.row] {
+            do {
+                try realm.write {
+                    realm.delete(deleteCategory)
+                }
+            } catch {
+                print("Error deleting \(error)")
+            }
+        }
     }
     
     

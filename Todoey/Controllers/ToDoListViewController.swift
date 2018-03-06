@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class ToDoListViewController: UITableViewController {
+class ToDoListViewController: SwipeTableViewController {
     
     let realm = try! Realm()
 
@@ -31,6 +31,7 @@ class ToDoListViewController: UITableViewController {
         super.viewDidLoad()
         
         searchBar.delegate = self
+        tableView.reloadData()
     }
 
     //MARK: - Tableview Datasource Methods
@@ -41,14 +42,14 @@ class ToDoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
        
         if let item = toDoItems?[indexPath.row] {
             cell.textLabel?.text = item.title
             cell.accessoryType = item.done ? .checkmark : .none //Ternary operator
         }
         else {
-            cell.textLabel?.text = "No Items"
+            cell.textLabel?.text = "No Items" //No Items label not working with swipe cell deletion -> see Q&A on Lecture 269
             cell.accessoryType = .none
         }
         
@@ -117,6 +118,18 @@ class ToDoListViewController: UITableViewController {
     func loadItems() {
         toDoItems = selectedCategory?.items.sorted(byKeyPath: "dateCreated", ascending: true)
         tableView.reloadData()
+    }
+    
+    override func deleteRowData(at indexPath: IndexPath) {
+        if let deleteItem = toDoItems?[indexPath.row] {
+            do {
+                try realm.write {
+                    realm.delete(deleteItem)
+                }
+            } catch {
+                print("Error deleting \(error)")
+            }
+        }
     }
     
 }
