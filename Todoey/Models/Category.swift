@@ -12,6 +12,7 @@ import RealmSwift
 //Object is saveable to Realm
 class Category: Object {
     @objc dynamic var name: String = ""
+    @objc dynamic var backgroundColour: String = ""
     
     //Forward linking relationship
     let items = List<Item>() //List is from Realm

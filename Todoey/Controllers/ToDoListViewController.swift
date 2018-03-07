@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class ToDoListViewController: SwipeTableViewController {
     
@@ -31,7 +32,33 @@ class ToDoListViewController: SwipeTableViewController {
         super.viewDidLoad()
         
         searchBar.delegate = self
-        tableView.reloadData()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+            
+        title = selectedCategory?.name
+        
+        guard let colourHex = selectedCategory?.backgroundColour else {fatalError()}
+
+        updateNavBar(withHexCode: colourHex)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        
+        updateNavBar(withHexCode: "1D9BF6")
+    }
+    
+    //MARK: - Nav Bar Setup Methods
+    
+    func updateNavBar(withHexCode colourHexCode: String) {
+        
+        guard let navBar = navigationController?.navigationBar else {fatalError("Navigation controller does not exist")} //Ok if in viewDidAppear
+        guard let navBarColour = UIColor(hexString: colourHexCode) else {fatalError()}
+        
+        navBar.barTintColor = navBarColour
+        navBar.tintColor = ContrastColorOf(navBarColour, returnFlat: true)
+        navBar.largeTitleTextAttributes = [NSAttributedStringKey.foregroundColor : ContrastColorOf(navBarColour, returnFlat: true)]
+        searchBar.barTintColor = navBarColour
     }
 
     //MARK: - Tableview Datasource Methods
@@ -47,6 +74,10 @@ class ToDoListViewController: SwipeTableViewController {
         if let item = toDoItems?[indexPath.row] {
             cell.textLabel?.text = item.title
             cell.accessoryType = item.done ? .checkmark : .none //Ternary operator
+            if let backColour = UIColor(hexString:selectedCategory!.backgroundColour)?.darken(byPercentage: CGFloat(indexPath.row)/CGFloat(toDoItems!.count)) {
+                    cell.backgroundColor = backColour
+                    cell.textLabel?.textColor = ContrastColorOf(backColour, returnFlat: true)
+            }
         }
         else {
             cell.textLabel?.text = "No Items" //No Items label not working with swipe cell deletion -> see Q&A on Lecture 269

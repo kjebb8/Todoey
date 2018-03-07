@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 
 class CategoryViewController: SwipeTableViewController {
@@ -33,7 +34,15 @@ class CategoryViewController: SwipeTableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = super.tableView(tableView, cellForRowAt: indexPath) //Function in Super Class
-        cell.textLabel?.text = category?[indexPath.row].name ?? "No Categories" //No Categories label not working with swipe cell deletion -> see Q&A on Lecture 269
+        
+        if let cellCategory = category?[indexPath.row] {
+            cell.textLabel?.text = cellCategory.name
+            
+            guard let categoryColour = UIColor(hexString: cellCategory.backgroundColour) else {fatalError()}
+            cell.backgroundColor = categoryColour
+            cell.textLabel?.textColor = ContrastColorOf(categoryColour, returnFlat: true)
+        }
+     
         return cell
     }
     
@@ -50,6 +59,7 @@ class CategoryViewController: SwipeTableViewController {
         let addAction = UIAlertAction(title: "Add Category", style: .default) { (addAction) in
             let newCategory = Category()
             newCategory.name = (self.alert?.textFields?[0].text)!
+            newCategory.backgroundColour = UIColor.randomFlat.hexValue()
             self.saveCategory(category: newCategory)
         }
         
